@@ -25,8 +25,24 @@ Device = "DOOR.json"
 # diretório completo do dispositivo
 DOOR_FILE_PATH = DEVICE_FILE_ROOT + Device
 
-# definição do tempo entre medições
-DELAY_MEASUREMENT = 10
+
+def update_context(entity_id, entity_type, value):
+    logging.info("Update entity with ID:{} and Type:{}".format(
+        entity_id, entity_type))
+    url = "http://{}:{}/{}/{}/attrs".format(
+        orion_host, orion_port, VERSION, entity_id)
+
+    data = {"status": {"type": "Boolean", "value": value}}
+    headers = {'Content-Type': 'application/json'}
+
+    r = requests.patch(url, data=json.dumps(data), headers=headers)
+    status_code = r.status_code
+    logging.info("Status Code: {}".format(str(status_code)))
+
+    response = json.loads(r.text) if r.text != '' else {}
+
+    logging.info("Response: ")
+    logging.info(json.dumps(response, indent=4))
 
 
 def delete_entity(entity_id, entity_type):
@@ -116,6 +132,8 @@ def register_entity(device_schema, device_type, device_id, endpoint):
 with open(DOOR_FILE_PATH) as json_file:
     data = json.load(json_file)
 
-#register_entity(data, DEVICE_TYPE, DEVICE_ID, '0.0.0.0:4000')
+# register_entity(data, DEVICE_TYPE, DEVICE_ID, '0.0.0.0:4000')
 # get_entities_by_type(DEVICE_TYPE)
+get_entities_by_id(DEVICE_ID)
+update_context(DEVICE_ID, DEVICE_TYPE, "false")
 get_entities_by_id(DEVICE_ID)
