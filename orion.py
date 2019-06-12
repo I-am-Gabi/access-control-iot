@@ -11,19 +11,8 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 VERSION = "v2/entities"
-orion_host = '10.7.40.62'
+orion_host = 'localhost'
 orion_port = '1026'
-
-# definição do diretório do dispositivo
-DEVICE_FILE_ROOT = './devices/'
-# id do dispositivo que se deseja enviar medições
-DEVICE_TYPE = "DoorControl"
-# id da entidade que está ligada ao dispositivo
-DEVICE_ID = "door01"
-# dispositivo que vai ser utilizado na aplicação
-Device = "DOOR.json"
-# diretório completo do dispositivo
-DOOR_FILE_PATH = DEVICE_FILE_ROOT + Device
 
 
 def update_context(entity_id, entity_type, value):
@@ -129,11 +118,35 @@ def register_entity(device_schema, device_type, device_id, endpoint):
     logging.info(json.dumps(response, indent=4))
 
 
-with open(DOOR_FILE_PATH) as json_file:
-    data = json.load(json_file)
+def subscribe_attributes_change(self, device_id, attributes, notification_url):
+    logging.info("Subscribing for change on attributes '{}' on device with id '{}'".format(
+        attributes, device_id))
 
-# register_entity(data, DEVICE_TYPE, DEVICE_ID, '0.0.0.0:4000')
-# get_entities_by_type(DEVICE_TYPE)
-get_entities_by_id(DEVICE_ID)
-update_context(DEVICE_ID, DEVICE_TYPE, "false")
-get_entities_by_id(DEVICE_ID)
+    url = "http://{}:{}/v1/subscribeContext".format(
+        self.cb_host, self.cb_port)
+
+    additional_headers = {'Accept': 'application/json',
+                          'Content-Type': 'application/json'}
+
+    payload = {"entities": [{
+        "type": "thing",
+        "isPattern": "false",
+        "id": str(device_id)
+    }],
+        "attributes": attributes,
+        "notifyConditions": [{
+            "type": "ONCHANGE",
+            "condValues": attributes
+        }],
+        "reference": notification_url,
+        "duration": "P1Y",
+        "throttling": "PT1S"
+    }
+
+    return self._send_request(url, payload, 'POST', additional_headers=additional_headers)
+
+
+def init(host, port):
+    global orion_host, orion_port
+    orion_host = host
+    orion_port = port
