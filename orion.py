@@ -118,21 +118,22 @@ def register_entity(device_schema, device_type, device_id, endpoint):
     logging.info(json.dumps(response, indent=4))
 
 
-def subscribe_attributes_change(self, device_id, attributes, notification_url):
+def subscribe_attributes_change(device_type, device_id, attributes, notification_url):
     logging.info("Subscribing for change on attributes '{}' on device with id '{}'".format(
         attributes, device_id))
 
     url = "http://{}:{}/v1/subscribeContext".format(
-        self.cb_host, self.cb_port)
+        cb_host, cb_port)
 
     additional_headers = {'Accept': 'application/json',
                           'Content-Type': 'application/json'}
 
-    payload = {"entities": [{
-        "type": "thing",
-        "isPattern": "false",
-        "id": str(device_id)
-    }],
+    payload = { "entities": 
+        [{
+            "type": device_type,
+            "isPattern": "false",
+            "id": device_id,
+        }],
         "attributes": attributes,
         "notifyConditions": [{
             "type": "ONCHANGE",
@@ -141,9 +142,17 @@ def subscribe_attributes_change(self, device_id, attributes, notification_url):
         "reference": notification_url,
         "duration": "P1Y",
         "throttling": "PT1S"
-    }
+    } 
 
-    return self._send_request(url, payload, 'POST', additional_headers=additional_headers)
+    r = requests.post(url, data=payload, headers=headers)
+
+    status_code = r.status_code
+    logging.info("Status Code: {}".format(str(status_code)))
+
+    response = json.loads(r.text) if r.text != '' else {}
+
+    logging.info("Response: ")
+    logging.info(json.dumps(response, indent=4))
 
 
 def init(host, port):
